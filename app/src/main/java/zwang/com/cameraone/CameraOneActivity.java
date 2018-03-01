@@ -6,10 +6,13 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -76,7 +79,10 @@ public class CameraOneActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        callCameraApplicationIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+        String authorities = getApplicationContext().getPackageName() + ".fileprovider";
+        Uri imageUri = FileProvider.getUriForFile(this, authorities, photoFile);
+        callCameraApplicationIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+        //callCameraApplicationIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
         startActivityForResult(callCameraApplicationIntent, ACTIVITY_START_CAMERA_APP);
     }
 
@@ -115,7 +121,7 @@ public class CameraOneActivity extends AppCompatActivity {
 
             // Showing photo reduced to imageView size
             // Take up less RAM for large full-images
-            setReducedImageSize();
+            rotateImage(setReducedImageSize());
         }
     }
 
@@ -154,7 +160,7 @@ public class CameraOneActivity extends AppCompatActivity {
         return image;
     }
 
-    void setReducedImageSize() {
+    private Bitmap setReducedImageSize() {
         int targetImageViewWidth = myPhotoCapturedImageView.getWidth();
         int targetImageViewHeight = myPhotoCapturedImageView.getHeight();
 
@@ -169,7 +175,34 @@ public class CameraOneActivity extends AppCompatActivity {
         bmOptions.inSampleSize = scaleFactor;
         bmOptions.inJustDecodeBounds = false;
 
+        //Bitmap photoReducedSizeBitmap = BitmapFactory.decodeFile(myImageFileLocation, bmOptions);
+        //myPhotoCapturedImageView.setImageBitmap(petrify(photoReducedSizeBitmap));
+
         Bitmap photoReducedSizeBitmap = BitmapFactory.decodeFile(myImageFileLocation, bmOptions);
-        myPhotoCapturedImageView.setImageBitmap(petrify(photoReducedSizeBitmap));
+        return photoReducedSizeBitmap;
+
+    }
+
+    private void rotateImage(Bitmap bitmap) {
+        ExifInterface exifInterface = null;
+        try {
+            exifInterface = new ExifInterface(myImageFileLocation);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED);
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.setRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.setRotate(180);
+                break;
+            default:
+        }
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        myPhotoCapturedImageView.setImageBitmap(petrify(rotatedBitmap));
     }
 }
