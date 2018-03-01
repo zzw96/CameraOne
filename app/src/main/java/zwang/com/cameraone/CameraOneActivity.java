@@ -106,9 +106,16 @@ public class CameraOneActivity extends AppCompatActivity {
             }
             myPhotoCapturedImageView.setImageBitmap(modifiedBitmap);*/
 
+            /*
+            // Showing and petrifying full size photo
             Bitmap photoCapturedBitmap = BitmapFactory.decodeFile(myImageFileLocation);
             Bitmap modifiedBitmap = petrify(photoCapturedBitmap);
             myPhotoCapturedImageView.setImageBitmap(modifiedBitmap);
+            */
+
+            // Showing photo reduced to imageView size
+            // Take up less RAM for large full-images
+            setReducedImageSize();
         }
     }
 
@@ -145,5 +152,24 @@ public class CameraOneActivity extends AppCompatActivity {
         myImageFileLocation = image.getAbsolutePath();
 
         return image;
+    }
+
+    void setReducedImageSize() {
+        int targetImageViewWidth = myPhotoCapturedImageView.getWidth();
+        int targetImageViewHeight = myPhotoCapturedImageView.getHeight();
+
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(myImageFileLocation, bmOptions);
+        int cameraImageWidth = bmOptions.outWidth;
+        int cameraImageHeight = bmOptions.outHeight;
+
+        int scaleFactor = Math.min(cameraImageWidth/targetImageViewWidth,
+                cameraImageHeight/targetImageViewHeight);
+        bmOptions.inSampleSize = scaleFactor;
+        bmOptions.inJustDecodeBounds = false;
+
+        Bitmap photoReducedSizeBitmap = BitmapFactory.decodeFile(myImageFileLocation, bmOptions);
+        myPhotoCapturedImageView.setImageBitmap(petrify(photoReducedSizeBitmap));
     }
 }
