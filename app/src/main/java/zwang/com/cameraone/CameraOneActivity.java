@@ -15,6 +15,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -30,12 +32,23 @@ public class CameraOneActivity extends AppCompatActivity {
     private static final int REQUEST_EXTERNAL_STORAGE_RESULT = 9;
     private ImageView myPhotoCapturedImageView;
     private String myImageFileLocation;
+    private String GALLERY_LOCATION = "gallery folder name";
+    private File myGalleryFolder;
+    private RecyclerView myRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_one);
-        myPhotoCapturedImageView = findViewById(R.id.caputuredPhotoImageView);
+
+        createImageGallery();
+        //myPhotoCapturedImageView = findViewById(R.id.caputuredPhotoImageView);
+
+        myRecyclerView = findViewById(R.id.galleryRecyclerView);
+        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(this, 1);
+        myRecyclerView.setLayoutManager(layoutManager);
+        RecyclerView.Adapter imageAdapter = new ImageAdapter(myGalleryFolder);
+        myRecyclerView.setAdapter(imageAdapter);
     }
 
     public void takePhoto(View view) {
@@ -121,7 +134,10 @@ public class CameraOneActivity extends AppCompatActivity {
 
             // Showing photo reduced to imageView size
             // Take up less RAM for large full-images
-            rotateImage(setReducedImageSize());
+            //rotateImage(setReducedImageSize());
+
+            RecyclerView.Adapter updatedAdapter = new ImageAdapter(myGalleryFolder);
+            myRecyclerView.swapAdapter(updatedAdapter, false);
         }
     }
 
@@ -146,13 +162,21 @@ public class CameraOneActivity extends AppCompatActivity {
         return modifiedBitmap;
     }
 
+    private void createImageGallery() {
+        File storageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        myGalleryFolder = new File(storageDirectory, GALLERY_LOCATION);
+        if (!myGalleryFolder.exists()) {
+            myGalleryFolder.mkdirs();
+        }
+    }
+
     File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "IMAGE_" + timeStamp + "_";
-        File storageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        //File storageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 
         //save as temp file
-        File image = File.createTempFile(imageFileName, ".jpg", storageDirectory);
+        File image = File.createTempFile(imageFileName, ".jpg", myGalleryFolder);
 
         //remember location for use in app
         myImageFileLocation = image.getAbsolutePath();
